@@ -49,7 +49,7 @@ def train_gfn_sr(batch_size, num_epochs, show_plot=False, use_gpu=True):
 
     action = Action(X.shape[1])
     #env = SRTree(X, y, action_space=action, max_depth=3, loss="dynamic") #original
-    env = SRTree(X, y, action_space=action, max_depth=3, loss="dynamic", verbose=False)
+    env = SRTree(X, y, action_space=action, max_depth=3, loss="dynamic")
     # forward_policy = RNNForwardPolicy(batch_size, 250, env.num_actions, 1, model="lstm", device=device)
     forward_policy = TransformerForwardPolicy(
         num_actions=env.num_actions,
@@ -95,7 +95,7 @@ def train_gfn_sr(batch_size, num_epochs, show_plot=False, use_gpu=True):
 
     return model, env, errs, avg_mses, top_mses
 
-def train_gfn_sr_adapted(X,y,batch_size, num_epochs, show_plot=False, use_gpu=True, policy="RNN", verbose=False):
+def train_gfn_sr_adapted(X,y,batch_size, num_epochs, show_plot=False, use_gpu=True, policy="RNN"):
     # INITIALIZE PARAMETERS AND MODEL
     # torch.manual_seed(4321) this seed doesn't work
     torch.manual_seed(42)
@@ -104,10 +104,11 @@ def train_gfn_sr_adapted(X,y,batch_size, num_epochs, show_plot=False, use_gpu=Tr
 
     action = Action(X.shape[1])
     #env = SRTree(X, y, action_space=action, max_depth=3, loss="dynamic") #original
-    env = SRTree(X, y, action_space=action, max_depth=3, loss="dynamic", verbose=verbose)
-
+    env = SRTree(X, y, action_space=action, max_depth=3, loss="dynamic")
+    
     if policy == "RNN":
         forward_policy = RNNForwardPolicy(256, 250, env.num_actions, 1, model="lstm", device=device)
+    # New Transformer policy
     elif policy == "TRN":
         forward_policy = TransformerForwardPolicy(
             num_actions=env.num_actions,
@@ -190,4 +191,3 @@ if __name__ == "__main__":
     num_epochs = args.num_epochs
 
     model, env, errs, avg_mses, top_mses = train_gfn_sr(batch_size, num_epochs, show_plot=True, use_gpu=True)
-

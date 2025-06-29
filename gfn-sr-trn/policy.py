@@ -19,18 +19,17 @@ class TransformerForwardPolicy(nn.Module):
         self.placeholder = placeholder
         self.device = torch.device("cpu") if not device else device
 
-        # Input projection layer
+        # Input layer
         input_dim = 2 * num_actions + 2 if one_hot else 2
         self.input_proj = nn.Linear(input_dim, d_model)
 
-        # Positional encoding (sinusoidal)
+        # Positional encoding
         self.positional_encoding = nn.Parameter(self._generate_positional_encoding(max_len, d_model), requires_grad=False)
 
         # Transformer encoder
         encoder_layer = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward=256, dropout=dropout, batch_first=True)
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers)
-
-        # Output projection
+        
         self.fc_out = nn.Linear(d_model, num_actions)
 
     def _generate_positional_encoding(self, max_len, d_model):
@@ -39,7 +38,7 @@ class TransformerForwardPolicy(nn.Module):
         pe = torch.zeros(max_len, d_model)
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
-        return pe.unsqueeze(0)  # shape: (1, max_len, d_model)
+        return pe.unsqueeze(0)
 
     def actions_to_one_hot(self, siblings, parents):
         siblings[siblings == self.placeholder] = -1
@@ -58,16 +57,15 @@ class TransformerForwardPolicy(nn.Module):
 
         x = self.input_proj(x.float())
 
-        # Add positional encoding
+        # Positional encoding
         seq_len = x.size(0)
         x = x + self.positional_encoding[:, :seq_len, :].to(self.device)
-
-        # Only add batch dim if missing
+        
         if x.dim() == 2:
             x = x.unsqueeze(0)
 
         encoded = self.transformer(x)
-        logits = self.fc_out(encoded[:, -1])  # use final position
+        logits = self.fc_out(encoded[:, -1])
 
         return F.softmax(logits, dim=-1).cpu()
         
@@ -176,4 +174,3 @@ class CanonicalBackwardPolicy(nn.Module):
         actions = encodings[torch.arange(len(encodings)), indices]
         probs = F.one_hot(actions, self.num_actions)
         return probs
-
